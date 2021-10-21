@@ -8,10 +8,12 @@ import org.black_ixx.bossshop.managers.ClassManager;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -24,26 +26,23 @@ public class ItemDataPartCustomSkull extends ItemDataPart {
             return i;
         }
 
-        ItemMeta skullMeta = i.getItemMeta();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), null);
-
-        Property property = input.contains("http://textures.minecraft.net/texture") ? getPropertyURL(input) : getProperty(input);
+        String URL = "https://textures.minecraft.net/texture";
+        SkullMeta skullMeta = ((SkullMeta) i.getItemMeta());
+        GameProfile profile = new GameProfile(UUID.nameUUIDFromBytes(URL.getBytes(StandardCharsets.UTF_8)), null);
+        Property property = input.contains(URL) ? getPropertyURL(input) : getProperty(input);
         profile.getProperties().put("textures", property);
-        Field profileField = null;
+
         try {
-            profileField = skullMeta.getClass().getDeclaredField("profile");
-        } catch (NoSuchFieldException | SecurityException e) {
-            e.printStackTrace();
-        }
-        profileField.setAccessible(true);
-        try {
-            profileField.set(skullMeta, profile);
-        } catch (IllegalArgumentException | IllegalAccessException e) {
+            Method method = skullMeta.getClass().getDeclaredMethod("setProfile", GameProfile.class);
+            method.setAccessible(true);
+            method.invoke(skullMeta, profile);
+        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
         i.setItemMeta(skullMeta);
         return i;
     }
+
 
     private static Property getProperty(String texture) {
         return new Property("textures", texture);
